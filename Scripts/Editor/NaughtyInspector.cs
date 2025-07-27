@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -35,9 +36,20 @@ namespace NaughtyAttributes.Editor
 
         public override void OnInspectorGUI()
         {
+            // Fast implementation of using my custom attribute for Component class.
+            // In future need make generalization of this
+            // But for now it's good and simple as dead
+            var type = target.GetType();
+            var attr = (ComponentInfoAttribute)Attribute.GetCustomAttribute(type, typeof(ComponentInfoAttribute));
+            if (attr != null)
+            {
+                EditorGUILayout.HelpBox(attr.Description, MessageType.Info);
+            }
+
             GetSerializedProperties(ref _serializedProperties);
 
-            bool anyNaughtyAttribute = _serializedProperties.Any(p => PropertyUtility.GetAttribute<INaughtyAttribute>(p) != null);
+            bool anyNaughtyAttribute =
+                _serializedProperties.Any(p => PropertyUtility.GetAttribute<INaughtyAttribute>(p) != null);
             if (!anyNaughtyAttribute)
             {
                 DrawDefaultInspector();
@@ -62,8 +74,7 @@ namespace NaughtyAttributes.Editor
                     do
                     {
                         outSerializedProperties.Add(serializedObject.FindProperty(iterator.name));
-                    }
-                    while (iterator.NextVisible(false));
+                    } while (iterator.NextVisible(false));
                 }
             }
         }
@@ -142,7 +153,8 @@ namespace NaughtyAttributes.Editor
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField("Non-Serialized Fields", GetHeaderGUIStyle());
                     NaughtyEditorGUI.HorizontalLine(
-                        EditorGUILayout.GetControlRect(false), HorizontalLineAttribute.DefaultHeight, HorizontalLineAttribute.DefaultColor.GetColor());
+                        EditorGUILayout.GetControlRect(false), HorizontalLineAttribute.DefaultHeight,
+                        HorizontalLineAttribute.DefaultColor.GetColor());
                 }
 
                 foreach (var field in _nonSerializedFields)
@@ -161,7 +173,8 @@ namespace NaughtyAttributes.Editor
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField("Native Properties", GetHeaderGUIStyle());
                     NaughtyEditorGUI.HorizontalLine(
-                        EditorGUILayout.GetControlRect(false), HorizontalLineAttribute.DefaultHeight, HorizontalLineAttribute.DefaultColor.GetColor());
+                        EditorGUILayout.GetControlRect(false), HorizontalLineAttribute.DefaultHeight,
+                        HorizontalLineAttribute.DefaultColor.GetColor());
                 }
 
                 foreach (var property in _nativeProperties)
@@ -180,7 +193,8 @@ namespace NaughtyAttributes.Editor
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField("Buttons", GetHeaderGUIStyle());
                     NaughtyEditorGUI.HorizontalLine(
-                        EditorGUILayout.GetControlRect(false), HorizontalLineAttribute.DefaultHeight, HorizontalLineAttribute.DefaultColor.GetColor());
+                        EditorGUILayout.GetControlRect(false), HorizontalLineAttribute.DefaultHeight,
+                        HorizontalLineAttribute.DefaultColor.GetColor());
                 }
 
                 foreach (var method in _methods)
@@ -190,19 +204,22 @@ namespace NaughtyAttributes.Editor
             }
         }
 
-        private static IEnumerable<SerializedProperty> GetNonGroupedProperties(IEnumerable<SerializedProperty> properties)
+        private static IEnumerable<SerializedProperty> GetNonGroupedProperties(
+            IEnumerable<SerializedProperty> properties)
         {
             return properties.Where(p => PropertyUtility.GetAttribute<IGroupAttribute>(p) == null);
         }
 
-        private static IEnumerable<IGrouping<string, SerializedProperty>> GetGroupedProperties(IEnumerable<SerializedProperty> properties)
+        private static IEnumerable<IGrouping<string, SerializedProperty>> GetGroupedProperties(
+            IEnumerable<SerializedProperty> properties)
         {
             return properties
                 .Where(p => PropertyUtility.GetAttribute<BoxGroupAttribute>(p) != null)
                 .GroupBy(p => PropertyUtility.GetAttribute<BoxGroupAttribute>(p).Name);
         }
 
-        private static IEnumerable<IGrouping<string, SerializedProperty>> GetFoldoutProperties(IEnumerable<SerializedProperty> properties)
+        private static IEnumerable<IGrouping<string, SerializedProperty>> GetFoldoutProperties(
+            IEnumerable<SerializedProperty> properties)
         {
             return properties
                 .Where(p => PropertyUtility.GetAttribute<FoldoutAttribute>(p) != null)
