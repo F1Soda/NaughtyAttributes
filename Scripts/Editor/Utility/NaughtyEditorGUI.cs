@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.Experimental.SceneManagement;
+using UnityEditor.Rendering;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -17,6 +18,8 @@ namespace NaughtyAttributes.Editor
         private static GUIStyle _buttonStyle = new GUIStyle(GUI.skin.button) { richText = true };
 
         private delegate void PropertyFieldFunction(Rect rect, SerializedProperty property, GUIContent label, bool includeChildren);
+        
+        public delegate bool ParameterFieldFunction(SerializedDataParameter parameter);
 
         public static void PropertyField(Rect rect, SerializedProperty property, bool includeChildren)
         {
@@ -28,6 +31,13 @@ namespace NaughtyAttributes.Editor
             Rect dummyRect = new Rect();
             PropertyField_Implementation(dummyRect, property, includeChildren, DrawPropertyField_Layout);
         }
+        
+        public static void ParameterField_Layout(SerializedProperty property, SerializedDataParameter parameter, ParameterFieldFunction parameterFieldFunction)
+        {
+            Rect dummyRect = new Rect();
+            ParameterField_Implementation(dummyRect, property, parameter, parameterFieldFunction);
+        }
+
 
         private static void DrawPropertyField(Rect rect, SerializedProperty property, GUIContent label, bool includeChildren)
         {
@@ -69,6 +79,46 @@ namespace NaughtyAttributes.Editor
                 using (new EditorGUI.DisabledScope(disabled: !enabled))
                 {
                     propertyFieldFunction.Invoke(rect, property, PropertyUtility.GetLabel(property), includeChildren);
+                }
+
+                // Call OnValueChanged callbacks
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PropertyUtility.CallOnValueChangedCallbacks(property);
+                }
+            }
+        }
+
+        private static void ParameterField_Implementation(Rect rect, SerializedProperty property, SerializedDataParameter parameter, ParameterFieldFunction parameterFieldFunction)
+        {
+            SpecialCaseDrawerAttribute specialCaseAttribute = PropertyUtility.GetAttribute<SpecialCaseDrawerAttribute>(property);
+            if (specialCaseAttribute != null)
+            {
+                specialCaseAttribute.GetDrawer().OnGUI(rect, property);
+            }
+            else
+            {
+                // Check if visible
+                bool visible = PropertyUtility.IsVisible(property);
+                if (!visible)
+                {
+                    return;
+                }
+
+                // Validate
+                ValidatorAttribute[] validatorAttributes = PropertyUtility.GetAttributes<ValidatorAttribute>(property);
+                foreach (var validatorAttribute in validatorAttributes)
+                {
+                    validatorAttribute.GetValidator().ValidateProperty(property);
+                }
+
+                // Check if enabled and draw
+                EditorGUI.BeginChangeCheck();
+                bool enabled = PropertyUtility.IsEnabled(property);
+
+                using (new EditorGUI.DisabledScope(disabled: !enabled))
+                {
+                    parameterFieldFunction(parameter);
                 }
 
                 // Call OnValueChanged callbacks
