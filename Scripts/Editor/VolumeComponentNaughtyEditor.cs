@@ -19,6 +19,11 @@ namespace TestVolume
         private List<SerializedProperty> _serializedProperties = new();
         private IEnumerable<MethodInfo> _methods;
         private Dictionary<string, SavedBool> _foldouts = new();
+        
+        // Cached Values
+        List<SerializedProperty> nonGroupedProperties;
+        List<IGrouping<string, SerializedProperty>> groupedProperties;
+        List<IGrouping<string, SerializedProperty>> foldoutProperties;
 
         public override void OnEnable()
         {
@@ -26,6 +31,11 @@ namespace TestVolume
 
             _methods = ReflectionUtility.GetAllMethods(
                 target, m => m.GetCustomAttributes(typeof(ButtonAttribute), true).Length > 0);
+            
+            GetSerializedProperties(ref _serializedProperties);
+            nonGroupedProperties = GetNonGroupedProperties(_serializedProperties).ToList();
+            groupedProperties = GetGroupedProperties(_serializedProperties).ToList();
+            foldoutProperties = GetFoldoutProperties(_serializedProperties).ToList();
         }
 
         public override void OnDisable()
@@ -35,8 +45,6 @@ namespace TestVolume
 
         public override void OnInspectorGUI()
         {
-            GetSerializedProperties(ref _serializedProperties);
-
             bool anyNaughtyAttribute =
                 _serializedProperties.Any(p => PropertyUtility.GetAttribute<INaughtyAttribute>(p) != null);
             if (!anyNaughtyAttribute)
@@ -88,7 +96,7 @@ namespace TestVolume
             serializedObject.Update();
 
             // Draw non-grouped serialized properties
-            foreach (var property in GetNonGroupedProperties(_serializedProperties))
+            foreach (var property in nonGroupedProperties)
             {
                 if (property.name.Equals("m_Script", System.StringComparison.Ordinal))
                 {
@@ -104,7 +112,7 @@ namespace TestVolume
             }
 
             // Draw grouped serialized properties
-            foreach (var group in GetGroupedProperties(_serializedProperties))
+            foreach (var group in groupedProperties)
             {
                 IEnumerable<SerializedProperty> visibleProperties = group.Where(p => PropertyUtility.IsVisible(p));
                 if (!visibleProperties.Any())
@@ -122,7 +130,7 @@ namespace TestVolume
             }
 
             // Draw foldout serialized properties
-            foreach (var group in GetFoldoutProperties(_serializedProperties))
+            foreach (var group in foldoutProperties)
             {
                 IEnumerable<SerializedProperty> visibleProperties = group.Where(p => PropertyUtility.IsVisible(p));
                 if (!visibleProperties.Any())
