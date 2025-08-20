@@ -322,6 +322,43 @@ namespace NaughtyAttributes.Editor
             return obj;
         }
 
+        /// <summary>
+        /// Gets the type of object the property represents.
+        /// </summary>
+        /// <param name="property"></param>
+        /// <returns></returns>
+        public static Type GetTargetTypeOfProperty(SerializedProperty property)
+        {
+            if (property == null)
+            {
+                return null;
+            }
+
+            string path = property.propertyPath.Replace(".Array.data[", "[");
+            object obj = property.serializedObject.targetObject;
+            FieldInfo lastFieldInfo = null;
+            string[] elements = path.Split('.');
+
+            foreach (var element in elements)
+            {
+                if (element.Contains("["))
+                {
+                    string elementName = element.Substring(0, element.IndexOf("["));
+                    int index = Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
+                    obj = GetValue_Imp(obj, elementName, index);
+                    lastFieldInfo = null;
+                }
+                else
+                {
+                    (obj, lastFieldInfo) = GetValueAndFieldInfo_Imp(obj, element);
+                }
+            }
+
+            if (lastFieldInfo != null)
+                return lastFieldInfo.FieldType;
+            return obj.GetType();
+        }
+        
         private static object GetValue_Imp(object source, string name)
         {
             if (source == null)
@@ -369,6 +406,35 @@ namespace NaughtyAttributes.Editor
             }
 
             return enumerator.Current;
+        }
+        
+        private static (object, FieldInfo) GetValueAndFieldInfo_Imp(object source, string name)
+        {
+            if (source == null)
+            {
+                return (null, null);
+            }
+
+            Type type = source.GetType();
+
+            while (type != null)
+            {
+                FieldInfo field = type.GetField(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                if (field != null)
+                {
+                    return (field.GetValue(source), field);
+                }
+
+                PropertyInfo property = type.GetProperty(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if (property != null)
+                {
+                    return (property.GetValue(source, null), null);
+                }
+
+                type = type.BaseType;
+            }
+
+            return (null, null);
         }
     }
 }
