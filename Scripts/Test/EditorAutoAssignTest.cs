@@ -4,7 +4,7 @@ namespace NaughtyAttributes.Test
 {
     public class EditorAutoAssignTest : MonoBehaviour
     {
-        [EditorAutoAssign("icon-github")]
+        [AutoAssignByFilter("icon-github")]
         public Texture2D texture;
         
         public EditorAutoAssignNest1 nest1;
@@ -13,7 +13,7 @@ namespace NaughtyAttributes.Test
     [System.Serializable]
     public class EditorAutoAssignNest1
     {
-        [EditorAutoAssign("icon-github")]
+        [AutoAssignByFilter("icon-github")]
         [AllowNesting]
         public Texture2D texture;
         
@@ -23,7 +23,7 @@ namespace NaughtyAttributes.Test
     [System.Serializable]
     public class EditorAutoAssignNest2
     {
-        [EditorAutoAssign("icon-github")]
+        [AutoAssignByFilter("icon-github")]
         [AllowNesting]
         public Texture2D texture;
     }

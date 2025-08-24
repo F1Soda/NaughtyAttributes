@@ -323,7 +323,8 @@ namespace NaughtyAttributes.Editor
         }
 
         /// <summary>
-        /// Gets the type of object the property represents.
+        /// Gets the type of object the property represents. This method works regardless of whether the property has
+        /// a value or is null.
         /// </summary>
         /// <param name="property"></param>
         /// <returns></returns>

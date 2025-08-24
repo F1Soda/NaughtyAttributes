@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace NaughtyAttributes
 {
@@ -25,16 +26,29 @@ namespace NaughtyAttributes
     /// <c>[Required]</c> to avoid false validation errors.
     /// </para>
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
-    public class EditorAutoAssignAttribute : ValidatorAttribute
+    public class AutoAssignByFilterAttribute : AutoAssignAttributeBase
     {
-        public string SearchString { get; private set; }
-        public bool Verbose { get; private set; }
+        public string Filter { get; }
+        public string[] SearchInFolders { get; }
+        public bool IsSearchInFoldersValid { get; private set; }
 
-        public EditorAutoAssignAttribute(string searchString, bool verbose = true)
+
+        public AutoAssignByFilterAttribute(string filter, string[] searchInFolders = null, bool verbose = true) :
+            base(verbose)
         {
-            SearchString = searchString;
-            Verbose = verbose;
+            Filter = filter;
+            SearchInFolders = searchInFolders;
+            ValidateSearchInFolders();
+        }
+
+        private void ValidateSearchInFolders()
+        {
+            IsSearchInFoldersValid = true;
+            if (SearchInFolders is null)
+                return;
+
+            if (SearchInFolders.Any(folder => string.IsNullOrEmpty(folder)))
+                IsSearchInFoldersValid = false;
         }
     }
 }
